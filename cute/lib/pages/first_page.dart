@@ -1,9 +1,11 @@
-import 'package:cute/apis/api.dart';
+import 'package:cute/apis/resp.dart';
 import 'package:cute/router/router.dart';
+import 'package:cute/widgets/refresh.dart';
 import 'package:cute_base/widgets/widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
+import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 class FirstPage extends CStatefulWidget {
   FirstPage({Key key, arguments}) : super(key: key, arguments: arguments);
@@ -12,35 +14,40 @@ class FirstPage extends CStatefulWidget {
 }
 
 class _FirstPageState extends State<FirstPage> {
-  final queryList = """
-    {
-      search(query: "react", type: REPOSITORY, first: 10) {
-        repositoryCount
-        nodes {
-          ... on Repository {
-            nameWithOwner
-            url
-            description
-            owner {
-              avatarUrl
-              login
-            }
-            owner {
-              avatarUrl
-              login
-            }
-            stargazers {
-              totalCount
-            }
-          }
-        }
-      }
-    }
-  """;
-
+  List _list = [];
+  RefreshController _refreshController =
+      RefreshController(initialRefresh: true);
   @override
   void initState() {
     super.initState();
+    _initData();
+  }
+
+  _initData() async {
+    QueryResult resp = await Resp().getList();
+    if (resp.hasErrors) {
+      print('${resp.errors}');
+    } else {
+      Map data = resp.data;
+      setState(() {
+        _list = data['search']['nodes'];
+      });
+      print(data);
+    }
+  }
+
+  _onRefresh() async {
+    try {
+      await _initData();
+    } catch (e) {} finally {
+      _refreshController.refreshCompleted();
+    }
+  }
+
+  _onLoading() async {
+    try {} catch (e) {
+      _refreshController.loadFailed();
+    }
   }
 
   @override
@@ -49,32 +56,30 @@ class _FirstPageState extends State<FirstPage> {
       appBar: AppBar(
         title: Text('ListView'),
       ),
-      body: _renderListView(),
+      body: SmartRefresher(
+        enablePullDown: true,
+        enablePullUp: true,
+        header: RefreshHeader(),
+        footer: RefreshFooter(),
+        controller: _refreshController,
+        onRefresh: _onRefresh,
+        onLoading: _onLoading,
+        child: _renderListView(),
+      ),
     );
   }
 
-  Query _renderListView() => Query(
-        options: QueryOptions(
-          document: queryList,
-          variables: {},
-        ),
-        builder: (QueryResult result,
-            {VoidCallback refetch, FetchMore fetchMore}) {
-          final data = result.data;
-          if (null == data) return Container();
-          return ListView(
-            padding: EdgeInsets.only(top: 15, bottom: 15),
-            children: <Widget>[
-              ...data['search']['nodes'].map(
-                (ele) => GestureDetector(
-                  child: _renderListItem(ele),
-                  onTap: () =>
-                      Router.push(context, 'cute://detail', arguments: ele),
-                ),
-              )
-            ],
-          );
-        },
+  ListView _renderListView() => ListView(
+        padding: EdgeInsets.only(top: 15, bottom: 15),
+        children: <Widget>[
+          ..._list.map(
+            (ele) => GestureDetector(
+              child: _renderListItem(ele),
+              onTap: () =>
+                  Router.push(context, 'cute://detail', arguments: ele),
+            ),
+          )
+        ],
       );
 
   Container _renderListItem(ele) => Container(

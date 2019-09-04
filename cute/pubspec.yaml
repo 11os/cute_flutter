@@ -21,6 +21,8 @@ dependencies:
     sdk: flutter
   cute_base:
     path: ../cute_base
+  # refresh
+  pull_to_refresh: ^1.5.2
   # graphql
   graphql_flutter: ^2.1.0
 

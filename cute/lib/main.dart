@@ -11,7 +11,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GraphQLProvider(
-      client: Api().client,
+      client: Api().widgetClient,
       child: MaterialApp(
         onGenerateRoute: Router.init(),
         home: MyHomePage(),
@@ -25,34 +25,36 @@ class MyHomePage extends StatefulWidget {
   _MyHomePageState createState() => _MyHomePageState();
 }
 
-const tabList = const [
+const _tabList = const [
   Tab(icon: Icon(Icons.home)),
   Tab(icon: Icon(Icons.favorite)),
   Tab(icon: Icon(Icons.more)),
   Tab(icon: Icon(Icons.perm_identity)),
 ];
 
+var _viewList = <Widget>[
+  FirstPage(),
+  Container(),
+  Container(),
+  Container(),
+];
+
 class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: tabList.length,
+      length: _tabList.length,
       child: Scaffold(
           bottomNavigationBar: SafeArea(
             child: TabBar(
-              tabs: tabList,
+              tabs: _tabList,
               unselectedLabelColor: Colors.grey,
               labelColor: Colors.blue,
               indicatorColor: Colors.transparent,
             ),
           ),
           body: TabBarView(
-            children: <Widget>[
-              FirstPage(),
-              Container(),
-              Container(),
-              Container(),
-            ],
+            children: _viewList,
           )),
     );
   }
